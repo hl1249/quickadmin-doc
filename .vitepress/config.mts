@@ -3,10 +3,13 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: 'Quick Admin',
   description: 'Quick Admin 全栈快速开发框架文档',
-  head: [['link', { rel: 'icon', href: '/logo.png' }]],
+  head: [['link', { rel: 'icon', href: '/mini-logo.png' }]],
   themeConfig: {
-    logo: '/logo.png',
+    logo: '/mini-logo.png',
     siteTitle: 'Quick Admin',
+    search: {
+      provider: 'local',
+    },
     nav: [
       { text: '首页', link: '/' },
       { text: '后端', link: '/backend/guide/start' },
@@ -22,6 +25,7 @@ export default defineConfig({
             { text: '目录结构', link: '/backend/guide/structure' },
             { text: '鉴权体系', link: '/backend/guide/auth' },
             { text: 'DbService 指南', link: '/backend/guide/db-service' },
+            { text: '工具函数的使用', link: '/backend/guide/field-query' },
             { text: '系统管理模块', link: '/backend/guide/system' },
             { text: '缓存模块', link: '/backend/guide/cache' },
             { text: 'WebSocket', link: '/backend/guide/websocket' },
