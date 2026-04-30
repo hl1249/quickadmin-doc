@@ -74,6 +74,7 @@ export default defineConfig({
     },
     socialLinks: [
       { icon: 'github', link: 'https://github.com/your-org/quickadmin' },
+      { icon: 'gitee', link: 'https://gitee.com/hr1249412130/quick-admin1.1' },
     ],
     footer: {
       message: 'MIT 协议发布',

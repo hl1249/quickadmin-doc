@@ -7,14 +7,6 @@
 - **MongoDB**: >= 6.0（推荐 8.0）
 - **Redis**: 可选（启用缓存时需安装）
 
-## 初始化数据库
-
-1. 下载并安装 [MongoDB 8.0](https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-8.0.3-signed.msi)
-2. 推荐使用 **Navicat** 导入 `db/quickAdmin.sql` 文件
-3. 若无 Navicat，可使用 **MongoDB Compass**：
-   - 打开 Compass → 连接 → `Create Database`（名称：`quickAdmin`）
-   - 进入 `Open MongoDB Shell` → 粘贴并执行 `db/quickAdmin.sql` 内容
-
 ## 启动服务端
 
 ```bash
@@ -36,6 +28,11 @@ npm run build:prod
 # 生产模式
 npm run start:prod
 ```
+
+## 初始化数据库
+
+1. 下载并安装 [MongoDB 8.0](https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-8.0.3-signed.msi)，或到 [MongoDB 官网](https://www.mongodb.com/) 开通云 MongoDB 服务。
+2. 服务端启动后，浏览器访问 [http://localhost:3000/setup/index.html](http://localhost:3000/setup/index.html)，按页面提示完成数据库初始化。
 
 ## 环境变量
 
