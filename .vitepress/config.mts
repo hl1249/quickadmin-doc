@@ -76,7 +76,7 @@ export default defineConfig({
       ],
     },
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/your-org/quickadmin' },
+      { icon: 'github', link: 'https://github.com/hl1249/quick-admin1.1' },
       { icon: 'gitee', link: 'https://gitee.com/hr1249412130/quick-admin1.1' },
     ],
     footer: {
