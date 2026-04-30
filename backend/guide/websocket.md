@@ -1,3 +1,4 @@
+
 # WebSocket
 
 项目基于 `@nestjs/websockets` 和 `socket.io` 封装了两套实时通信通道：
@@ -11,9 +12,10 @@
 
 `admin-socket` 面向后台管理端，适合系统通知、订单变更、连接池刷新等后台实时消息。
 
-### 主题注册
 
-后台命名空间定义在 `src/websocket/constants/socket.constants.ts` 
+#### 命名空间
+
+后台命名空间定义在 `src/websocket/constants/socket.constants.ts`。
 
 ```typescript
 export const SOCKET_NAMESPACES = {
@@ -22,7 +24,9 @@ export const SOCKET_NAMESPACES = {
 } as const;
 ```
 
-事件主题统一注册在 `src/websocket/constants/socket.constants.ts` 
+#### 事件主题
+
+事件主题统一注册在 `src/websocket/constants/socket.constants.ts`。
 
 ```typescript
 export const SOCKET_EVENTS = {
@@ -39,17 +43,37 @@ export const SOCKET_EVENTS = {
 } as const;
 ```
 
-后台用户连接成功后，会自动加入 `user:{userId}` 房间，后端可通过该房间向指定 `userId` 的用户推送消息。源码位置：
+#### 首次连接
 
-- `src/websocket/gateways/admin.gateway.ts` 
+连接处理流程：
+
+1. 调用 `this.wsAuthService.authenticate(client, 'admin')` 校验前端携带的 token。
+2. 鉴权成功后调用 `authClient.join(buildUserRoom(...))` 加入 `user:{userId}` 房间。
+3. 调用 `this.adminSocketService.registerConnection(authClient)` 写入后台连接池，并触发 `pond:update`。
+4. 调用 `this.logger.log(...)` 记录连接成功日志。
+5. 鉴权失败时触发 `exception` 事件，把失败原因返回给前端。
+6. 调用 `client.disconnect()` 主动断开未通过鉴权的连接。
 
 ```typescript
-authClient.join(buildUserRoom(authClient.data.userInfo._id));
+async handleConnection(client: Socket) {
+  try {
+    const authClient = await this.wsAuthService.authenticate(client, 'admin');
+
+    authClient.join(buildUserRoom(authClient.data.userInfo._id));
+    this.adminSocketService.registerConnection(authClient);
+    this.logger.log(`admin socket connected: ${authClient.id}`);
+  } catch (error: any) {
+    client.emit('exception', {
+      message: error?.message || '连接鉴权失败',
+    });
+    client.disconnect();
+  }
+}
 ```
 
-作用：后端可以通过 `user:{userId}` 房间向指定用户单播消息。
+#### 后端推送给前端
 
-后台用户单播示例：
+##### 指定用户单播消息
 
 ```typescript
 import { Body, Controller, Post } from '@nestjs/common';
@@ -74,7 +98,68 @@ export class TaskController {
 }
 ```
 
-后台订单定向推送示例：
+
+
+##### 主动断开在线连接
+
+```typescript
+@Post('/disconnect')
+disconnect(@Body() data: { socketId: string }) {
+  return this.adminSocketService.disconnectConnection(data.socketId);
+}
+```
+
+##### 广播所有在线用户
+
+```typescript
+this.adminSocketService.emitNotify({
+  title: '系统通知',
+  message: '后台广播消息',
+});
+```
+
+#####  `emitOrderUpdated`：广播订单更新，并同时推送到 `biz:order:{orderId}` 房间。
+
+```typescript
+this.adminSocketService.emitOrderUpdated({
+  orderId,
+  title: '订单更新',
+  message: '订单已支付',
+  level: 'info',
+});
+```
+
+#####  `emitOrderUpdatedToUser`：只给指定后台用户推送订单更新。
+
+```typescript
+this.adminSocketService.emitOrderUpdatedToUser(userId, {
+  orderId,
+  title: '订单更新',
+  message: '订单状态已变更',
+  level: 'warning',
+});
+```
+
+`emitNotifyToUser`：只给指定后台用户推送通知。
+
+```typescript
+this.adminSocketService.emitNotifyToUser(userId, {
+  title: '待办提醒',
+  message: '你有一条新的审批任务',
+  taskId,
+});
+```
+
+`emitNotifyToBizRoom`：向指定业务房间推送通知。
+
+```typescript
+this.adminSocketService.emitNotifyToBizRoom('task', taskId, {
+  title: '任务更新',
+  message: '任务状态已变更',
+});
+```
+
+示例：后台订单定向推送。
 
 ```typescript
 this.adminSocketService.emitOrderUpdatedToUser(userId, {
@@ -85,7 +170,7 @@ this.adminSocketService.emitOrderUpdatedToUser(userId, {
 });
 ```
 
-客户端用户单播示例：
+示例：客户端用户单播。
 
 ```typescript
 import { Body, Controller, Post } from '@nestjs/common';
@@ -110,6 +195,8 @@ export class GoodsController {
 }
 ```
 
+#### 业务房间
+
 业务房间通过 `room:join` 注册，房间名规则为：
 
 ```typescript
@@ -124,6 +211,8 @@ await joinRoom({
   bizId: '订单ID',
 });
 ```
+
+#### 新增主题示例
 
 新增后台主题时，先在 `SOCKET_EVENTS` 中注册事件名：
 
@@ -154,6 +243,8 @@ this.adminSocketService.emitNotifyToBizRoom('task', taskId, {
 
 ### 后端 emit、on
 
+#### 后端 on：监听前端事件
+
 Gateway 通过 `@SubscribeMessage` 监听前端事件：
 
 ```typescript
@@ -166,7 +257,7 @@ handlePing(@ConnectedSocket() client: AuthenticatedSocket) {
 }
 ```
 
-加入和退出业务房间：
+示例：加入业务房间。
 
 ```typescript
 @SubscribeMessage(SOCKET_EVENTS.roomJoin)
@@ -180,6 +271,8 @@ handleJoinRoom(
 }
 ```
 
+#### 后端 emit：主动推送消息
+
 业务模块需要主动推送后台消息时，注入 `AdminSocketService`：
 
 ```typescript
@@ -188,7 +281,53 @@ constructor(
 ) {}
 ```
 
-全量广播通知：
+`AdminSocketService` 方法列表，源码位置：`src/websocket/services/admin-socket.service.ts`。
+
+```typescript
+// 注册后台命名空间，Gateway 初始化时调用
+registerNamespace(namespace: Namespace)
+
+// 注册后台连接，连接成功时写入连接池
+registerConnection(client: AuthenticatedSocket)
+
+// 移除后台连接，连接断开时从连接池删除
+unregisterConnection(socketId: string)
+
+// 获取后台连接池列表
+getConnectionList(query?: AdminSocketConnectionQuery)
+
+// 主动断开指定后台 Socket 连接
+disconnectConnection(socketId: string)
+
+// 广播连接池变化事件 pond:update
+emitPondUpdate(extra?: Record<string, any>)
+
+// 向后台所有在线连接广播 notify
+emitNotify(payload: Record<string, any>)
+
+// 广播订单更新，推给全局和订单业务房间
+emitOrderUpdated(payload: AdminOrderUpdatePayload)
+
+// 向指定后台用户推送订单更新
+emitOrderUpdatedToUser(userId: string, payload: AdminOrderUpdatePayload)
+
+// 向指定后台用户推送 notify
+emitNotifyToUser(userId: string, payload: Record<string, any>)
+
+// 向指定业务房间推送 notify
+emitNotifyToBizRoom(bizType: string, bizId: string, payload: Record<string, any>)
+```
+
+内部辅助方法：
+
+```typescript
+toConnectionItem(record: AdminSocketConnectionRecord)
+getSocketRooms(socket: Socket)
+formatDateTime(timestamp: number)
+formatDuration(durationMs: number)
+```
+
+示例：全量广播通知。
 
 ```typescript
 this.adminSocketService.emitNotify({
@@ -197,7 +336,7 @@ this.adminSocketService.emitNotify({
 });
 ```
 
-按用户推送：
+示例：按用户推送。
 
 ```typescript
 this.adminSocketService.emitNotifyToUser(userId, {
@@ -206,7 +345,7 @@ this.adminSocketService.emitNotifyToUser(userId, {
 });
 ```
 
-按业务房间推送：
+示例：按业务房间推送。
 
 ```typescript
 this.adminSocketService.emitNotifyToBizRoom('order', orderId, {
@@ -215,7 +354,7 @@ this.adminSocketService.emitNotifyToBizRoom('order', orderId, {
 });
 ```
 
-订单变更推送：
+示例：订单变更推送。
 
 ```typescript
 this.adminSocketService.emitOrderUpdated({
@@ -228,7 +367,9 @@ this.adminSocketService.emitOrderUpdated({
 
 连接池变化会由服务端自动广播 `pond:update`，后台连接池页面监听后刷新列表。
 
-后端监听前端自定义事件示例：
+#### 自定义事件示例
+
+示例：后端监听前端自定义事件。
 
 ```typescript
 @SubscribeMessage('task:read')
@@ -244,7 +385,7 @@ handleTaskRead(
 }
 ```
 
-后端主动 emit 自定义事件示例：
+示例：后端主动 emit 自定义事件。
 
 ```typescript
 this.adminSocketService.emitNotifyToUser(userId, {
@@ -338,271 +479,6 @@ const stopTaskListener = adminSocket.on('task:updated', payload => {
 
 onBeforeUnmount(() => {
   stopTaskListener();
-});
-```
-
-## client-socket
-
-`client-socket` 面向客户端，适合用户通知、聊天消息、购物车同步等前台实时场景。
-
-### 主题注册
-
-客户端命名空间定义在 `SOCKET_NAMESPACES.client`：
-
-```typescript
-export const SOCKET_NAMESPACES = {
-  admin: '/admin',
-  client: '/client',
-} as const;
-```
-
-客户端可用事件包括：
-
-| 事件 | 方向 | 说明 |
-|------|------|------|
-| `ping` | 前端 -> 后端 | 心跳检测 |
-| `pong` | 后端 -> 前端 | 心跳响应 |
-| `room:join` | 前端 -> 后端 | 加入业务房间 |
-| `room:leave` | 前端 -> 后端 | 退出业务房间 |
-| `chat:send` | 前端 -> 后端 | 发送聊天消息 |
-| `chat:message` | 后端 -> 前端 | 广播聊天消息 |
-| `cart:sync` | 双向 | 前端发送购物车同步，后端转发给房间内其他连接 |
-| `notify` | 后端 -> 前端 | 用户通知 |
-
-客户端连接成功后同样会自动加入用户房间：
-
-```typescript
-authClient.join(buildUserRoom(authClient.data.userInfo._id));
-```
-
-业务房间仍使用统一规则：
-
-```typescript
-buildBizRoom(bizType, bizId); // biz:{bizType}:{bizId}
-```
-
-发送聊天或同步购物车前，前端需要先加入对应业务房间，否则后端会返回 `请先加入业务房间`。
-
-新增客户端主题示例：
-
-```typescript
-export const SOCKET_EVENTS = {
-  // ... existing events
-  liveLike: 'live:like',
-  liveLikeUpdated: 'live:like:updated',
-} as const;
-```
-
-直播间这类业务可以使用统一业务房间：
-
-```typescript
-await clientSocket.joinRoom({
-  bizType: 'live',
-  bizId: liveRoomId,
-});
-```
-
-### 后端 emit、on
-
-Gateway 监听客户端发来的事件：
-
-```typescript
-@SubscribeMessage(SOCKET_EVENTS.chatSend)
-handleChatMessage(
-  @ConnectedSocket() client: AuthenticatedSocket,
-  @MessageBody() payload: ClientChatPayload,
-) {
-  const room = buildBizRoom(payload.bizType, payload.bizId);
-  this.clientSocketService.emitChatMessage(client, payload);
-  return { room, sent: true };
-}
-```
-
-购物车同步：
-
-```typescript
-@SubscribeMessage(SOCKET_EVENTS.cartSync)
-handleCartSync(
-  @ConnectedSocket() client: AuthenticatedSocket,
-  @MessageBody() payload: ClientCartSyncPayload,
-) {
-  const room = buildBizRoom(payload.bizType, payload.bizId);
-  this.clientSocketService.syncCart(client, payload);
-  return { room, synced: true };
-}
-```
-
-业务模块主动给客户端用户推送通知时，注入 `ClientSocketService`：
-
-```typescript
-constructor(
-  private readonly clientSocketService: ClientSocketService,
-) {}
-```
-
-按用户推送：
-
-```typescript
-this.clientSocketService.emitNotifyToUser(userId, {
-  title: '消息提醒',
-  message: '你有一条新的客户端通知',
-});
-```
-
-聊天消息由 `emitChatMessage` 推送到业务房间：
-
-```typescript
-this.namespace.to(room).emit(SOCKET_EVENTS.chatMessage, {
-  bizType: payload.bizType,
-  bizId: payload.bizId,
-  message: payload.message,
-  sender: sender.data.userInfo,
-  ts: Date.now(),
-});
-```
-
-购物车同步使用 `sender.to(room).emit`，不会再发给发送者自己：
-
-```typescript
-sender.to(room).emit(SOCKET_EVENTS.cartSync, {
-  bizType: payload.bizType,
-  bizId: payload.bizId,
-  cart: payload.cart,
-  sender: sender.data.userInfo,
-  ts: Date.now(),
-});
-```
-
-后端监听客户端自定义事件示例：
-
-```typescript
-@SubscribeMessage('live:like')
-handleLiveLike(
-  @ConnectedSocket() client: AuthenticatedSocket,
-  @MessageBody() payload: { bizType: string; bizId: string },
-) {
-  const room = buildBizRoom(payload.bizType, payload.bizId);
-
-  this.server.to(room).emit('live:like:updated', {
-    bizType: payload.bizType,
-    bizId: payload.bizId,
-    user: client.data.userInfo,
-    ts: Date.now(),
-  });
-
-  return {
-    room,
-    liked: true,
-  };
-}
-```
-
-后端主动给客户端用户 emit 示例：
-
-```typescript
-this.clientSocketService.emitNotifyToUser(userId, {
-  title: '优惠提醒',
-  message: '你关注的商品降价了',
-  goodsId,
-});
-```
-
-### 前端 emit、on
-
-客户端连接使用通用 `useSocket`，命名空间传 `client`：
-
-```typescript
-import {
-  SOCKET_EVENTS,
-  useSocket,
-} from '@/composables/useSocket';
-
-const clientSocket = useSocket({
-  namespace: 'client',
-});
-```
-
-加入业务房间：
-
-```typescript
-await clientSocket.joinRoom({
-  bizType: 'chat',
-  bizId: roomId,
-});
-```
-
-发送聊天消息：
-
-```typescript
-await clientSocket.sendChat({
-  bizType: 'chat',
-  bizId: roomId,
-  message: '你好',
-});
-```
-
-监听聊天广播：
-
-```typescript
-const stopChatListener = clientSocket.on(SOCKET_EVENTS.chatMessage, payload => {
-  console.log('收到聊天消息', payload);
-});
-```
-
-同步购物车：
-
-```typescript
-await clientSocket.syncCart({
-  bizType: 'cart',
-  bizId: cartId,
-  cart: {
-    goodsId: '10001',
-    count: 2,
-  },
-});
-```
-
-监听其他端同步过来的购物车变化：
-
-```typescript
-const stopCartListener = clientSocket.on(SOCKET_EVENTS.cartSync, payload => {
-  console.log('购物车同步', payload);
-});
-```
-
-监听客户端通知：
-
-```typescript
-const stopNotifyListener = clientSocket.on(SOCKET_EVENTS.notify, payload => {
-  console.log('收到客户端通知', payload);
-});
-```
-
-前端 emit 自定义点赞事件：
-
-```typescript
-const result = await clientSocket.emitWithAck('live:like', {
-  bizType: 'live',
-  bizId: liveRoomId,
-});
-```
-
-前端监听点赞广播：
-
-```typescript
-const stopLikeListener = clientSocket.on('live:like:updated', payload => {
-  console.log('点赞变化', payload);
-});
-```
-
-组件销毁时取消监听：
-
-```typescript
-onBeforeUnmount(() => {
-  stopChatListener();
-  stopCartListener();
-  stopNotifyListener();
-  stopLikeListener();
 });
 ```
 

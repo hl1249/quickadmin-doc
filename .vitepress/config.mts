@@ -7,6 +7,9 @@ export default defineConfig({
   themeConfig: {
     logo: '/mini-logo.png',
     siteTitle: 'Quick Admin',
+    outline: {
+      level: 'deep',
+    },
     search: {
       provider: 'local',
     },
