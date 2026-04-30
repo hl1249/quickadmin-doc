@@ -32,7 +32,29 @@ npm run start:prod
 ## 初始化数据库
 
 1. 下载并安装 [MongoDB 8.0](https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-8.0.3-signed.msi)，或到 [MongoDB 官网](https://www.mongodb.com/) 开通云 MongoDB 服务。
-2. 服务端启动后，浏览器访问 `http://localhost:3000/setup/index.html`，按页面提示完成数据库初始化。
+
+2. 在项目根目录 `.env` 中配置数据库连接（支持 `srv` 和无 `srv`）：
+
+   **无 `srv`（本地或自建 MongoDB）示例：**
+
+   ```env
+   DB_URL=127.0.0.1
+   DB_PORT=27017
+   DB_NAME=quickAdmin
+   ```
+
+   **`srv`（MongoDB Atlas 等云服务）示例：**
+
+   ```env
+   DB_URL=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net
+   DB_NAME=quickAdmin
+   ```
+
+   说明：
+   - 当 `DB_URL` 为主机地址（如 `127.0.0.1` 或 `mongodb://127.0.0.1`）时，会使用 `DB_PORT` 拼接连接串。
+   - 当 `DB_URL` 为完整 Mongo URI（`mongodb://` / `mongodb+srv://`）时，`DB_PORT` 会被忽略；若 URI 未包含库名，会自动使用 `DB_NAME`。
+
+3. 服务端启动后，浏览器访问 `http://localhost:3000/setup/index.html`，按页面提示完成数据库初始化。
 
 ## 环境变量
 
