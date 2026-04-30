@@ -7,7 +7,7 @@
 | 文件 | 说明 |
 |------|------|
 | index.vue | 用户列表页（表格 + 搜索 + 分页） |
-| orm/UserForm.vue | 新增/编辑用户弹窗 |
+| form/UserForm.vue | 新增/编辑用户弹窗 |
 
 ### 功能
 
@@ -24,7 +24,7 @@
 | 文件 | 说明 |
 |------|------|
 | index.vue | 角色列表页 |
-| orm/RoleForm.vue | 新增/编辑角色弹窗 |
+| form/RoleForm.vue | 新增/编辑角色弹窗 |
 
 ### 功能
 

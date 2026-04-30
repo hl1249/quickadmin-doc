@@ -32,7 +32,7 @@ npm run start:prod
 ## 初始化数据库
 
 1. 下载并安装 [MongoDB 8.0](https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-8.0.3-signed.msi)，或到 [MongoDB 官网](https://www.mongodb.com/) 开通云 MongoDB 服务。
-2. 服务端启动后，浏览器访问 [http://localhost:3000/setup/index.html](http://localhost:3000/setup/index.html)，按页面提示完成数据库初始化。
+2. 服务端启动后，浏览器访问 `http://localhost:3000/setup/index.html`，按页面提示完成数据库初始化。
 
 ## 环境变量
 

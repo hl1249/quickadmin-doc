@@ -17,7 +17,7 @@
 
 ## 目录结构
 
-`
+```text
 template/admin/
 ├── src/
 │   ├── main.ts               # 应用入口
@@ -46,11 +46,11 @@ template/admin/
 ├── scripts/                  # 构建脚本
 ├── vite.config.ts            # Vite 配置
 └── package.json
-`
+```
 
 ## 启动
 
-`ash
+```bash
 # 进入 admin 目录
 cd template/admin
 
@@ -62,4 +62,4 @@ npm run dev
 
 # 生产构建
 npm run build
-`
+```

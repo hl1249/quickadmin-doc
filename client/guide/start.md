@@ -13,7 +13,7 @@
 
 ## 目录结构
 
-`
+```text
 template/client/
 ├── src/
 │   ├── main.ts               # 应用入口
@@ -27,11 +27,11 @@ template/client/
 ├── env/                      # 环境配置
 ├── dist/                     # 构建产物
 └── package.json
-`
+```
 
 ## 启动
 
-`ash
+```bash
 # 进入 client 目录
 cd template/client
 
@@ -49,14 +49,14 @@ npm run build:h5
 
 # 小程序发布
 npm run build:mp-weixin
-`
+```
 
 ## 多端支持
 
 | 目标平台 | 命令 |
 |----------|------|
-| H5 网页 | dev:h5 / uild:h5 |
-| 微信小程序 | dev:mp-weixin / uild:mp-weixin |
-| 支付宝小程序 | dev:mp-alipay / uild:mp-alipay |
-| 字节小程序 | dev:mp-toutiao / uild:mp-toutiao |
-| App | dev:app / uild:app |
+| H5 网页 | dev:h5 / build:h5 |
+| 微信小程序 | dev:mp-weixin / build:mp-weixin |
+| 支付宝小程序 | dev:mp-alipay / build:mp-alipay |
+| 字节小程序 | dev:mp-toutiao / build:mp-toutiao |
+| App | dev:app / build:app |
