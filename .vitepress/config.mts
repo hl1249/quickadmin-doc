@@ -61,7 +61,7 @@ export default defineConfig({
           text: '功能页面',
           items: [
             { text: '系统管理页面', link: '/admin/guide/system-pages' },
-            { text: '模板模块', link: '/admin/guide/template-modules' },
+            { text: 'QA 组件使用', link: '/admin/guide/template-modules' },
           ],
         },
       ],
